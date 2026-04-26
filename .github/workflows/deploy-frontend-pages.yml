@@ -2,6 +2,8 @@
 # Prerequisite: In repo Settings → Secrets and variables → Actions,
 #   add secret VITE_API_BASE = https://YOUR-SERVICE.onrender.com
 # In Settings → Pages → Build and deployment → Source: GitHub Actions.
+#
+# VITE_BASE_PATH is /REPO/ from the repository name (project page https://user.github.io/REPO/).
 
 name: Deploy frontend to GitHub Pages
 
@@ -11,6 +13,7 @@ on:
     paths:
       - 'frontend/**'
       - '.github/workflows/deploy-frontend-pages.yml'
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -35,7 +38,8 @@ jobs:
         working-directory: frontend
         env:
           VITE_API_BASE: ${{ secrets.VITE_API_BASE }}
-          VITE_BASE_PATH: ${{ vars.VITE_BASE_PATH }}
+          # project pages: https://x.github.io/REPO/  →  JS/CSS under /REPO/ (avoids black screen)
+          VITE_BASE_PATH: /${{ github.event.repository.name }}/
         run: npm ci && npm run build
       - uses: actions/upload-pages-artifact@v3
         with:
