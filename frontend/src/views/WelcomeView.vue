@@ -102,8 +102,25 @@ onUnmounted(() => {
 .welcome-scale {
   position: relative;
   z-index: 1;
+  /* Base copy is small; this scale is required for the EVA “distance” look.
+     If transform is not applied (some privacy modes / bugs), sub-10px text on #030305 looks like a black screen. */
   transform: scale(3.5);
   transform-origin: center center;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .welcome-scale {
+    transform: none;
+  }
+
+  .welcome-title {
+    font-size: clamp(1.1rem, 3.5vw, 1.75rem) !important;
+  }
+
+  .welcome-sub,
+  .welcome-hint {
+    font-size: clamp(0.75rem, 2vw, 0.95rem) !important;
+  }
 }
 
 .welcome-inner {
@@ -138,25 +155,28 @@ onUnmounted(() => {
 
 .welcome-title {
   margin: 0;
-  font-size: clamp(0.66rem, 2.1vw, 0.87rem);
+  /* Ensure readable size if transform: scale() is not in effect (min ~11px before scale) */
+  font-size: max(0.7rem, clamp(0.66rem, 2.1vw, 0.87rem));
   font-weight: 600;
   letter-spacing: 0.2em;
   text-transform: uppercase;
   color: #ececec;
   line-height: 1.25;
+  text-shadow: 0 0 12px rgba(236, 236, 236, 0.12);
 }
 
 .welcome-sub {
   margin: 0;
-  font-size: 7px;
+  /* 7px before scale(3.5) is illegible on some UAs; keep ≥10px at layout size */
+  font-size: max(10px, 0.5rem);
   line-height: 1.35;
   letter-spacing: 0.1em;
-  color: rgba(200, 200, 200, 0.65);
+  color: rgba(200, 200, 200, 0.75);
 }
 
 .welcome-hint {
   margin: 2px 0 0;
-  font-size: 7px;
+  font-size: max(10px, 0.5rem);
   letter-spacing: 0.14em;
   color: #2ecc71;
   line-height: 1.3;

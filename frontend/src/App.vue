@@ -423,7 +423,11 @@ function t(key) {
 }
 
 watch(locale, (next) => {
-  localStorage.setItem('magi_locale', next)
+  try {
+    if (typeof localStorage !== 'undefined') localStorage.setItem('magi_locale', next)
+  } catch {
+    /* private mode / blocked storage: ignore */
+  }
 })
 
 function pushTrace(titleKey, detail = '', level = 'info') {
