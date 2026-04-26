@@ -344,6 +344,7 @@ def _architect_completion_sync(model: str, token: str, prompt: str, locale: str)
     """
     if completion is None:
         raise RuntimeError("litellm completion is unavailable.")
+    model = _litellm_model_for_openrouter_key(model, token)
     response = completion(
         model=model,
         api_key=token,
@@ -468,6 +469,23 @@ def _resolve_model_name(spec: NodeSpec, request: ResolveRequest) -> str:
     return os.getenv(spec.model_env, spec.default_model)
 
 
+def _litellm_model_for_openrouter_key(model: str, api_key: str) -> str:
+    """
+    OpenRouter's catalog returns ids like "openai/gpt-oss-20b:free" (no leading openrouter/ prefix).
+    LiteLLM otherwise treats "openai/..." as the OpenAI *platform* and sends the request
+    to api.openai.com, which rejects OpenRouter keys (sk-or-v1...).
+
+    When the key is an OpenRouter key, route all such ids through the openrouter/ provider.
+    """
+    m = (model or "").strip()
+    if not m or m.startswith("openrouter/"):
+        return m
+    k = (api_key or "").strip()
+    if k.startswith("sk-or-"):
+        return f"openrouter/{m.lstrip('/')}"
+    return m
+
+
 def _user_turn_count(user_input: str) -> int:
     turns = [chunk.strip() for chunk in user_input.split("\n\n") if chunk.strip()]
     return len(turns)
@@ -580,7 +598,10 @@ async def _build_architect_result(request: ResolveRequest) -> ArchitectResult:
             return _finalize_with_uncertainty(request)
         return fallback
 
-    architect_model = os.getenv("MAGI_ARCHITECT_MODEL", os.getenv("MAGI_MODEL_CLAUDE", "anthropic/claude-3-5-sonnet-latest"))
+    architect_model = _litellm_model_for_openrouter_key(
+        os.getenv("MAGI_ARCHITECT_MODEL", os.getenv("MAGI_MODEL_CLAUDE", "anthropic/claude-3-5-sonnet-latest")),
+        token,
+    )
     prompt = f"{_prompt(request.locale, 'bootstrap')}\n\nUser Input:\n{user_input}\n\n{_lang_instruction(request.locale)}"
 
     try:
@@ -635,7 +656,10 @@ async def _architect_bus_report(
     if not token or acompletion is None:
         return _fallback_bus_report(first_round_reports, locale)
 
-    architect_model = os.getenv("MAGI_ARCHITECT_MODEL", os.getenv("MAGI_MODEL_CLAUDE", "anthropic/claude-3-5-sonnet-latest"))
+    architect_model = _litellm_model_for_openrouter_key(
+        os.getenv("MAGI_ARCHITECT_MODEL", os.getenv("MAGI_MODEL_CLAUDE", "anthropic/claude-3-5-sonnet-latest")),
+        token,
+    )
     reports_blob = "\n\n".join(
         [
             f"[{r.node}]\nstatus={r.status.value}\nopinion={r.opinion}\nsummary={r.summary}\nkey_points={'; '.join(r.key_points)}\nraw={r.raw_text or ''}"
@@ -700,7 +724,10 @@ async def _architect_clerk_finalize(
     token = _pick_architect_token(tokens)
     if not token or acompletion is None:
         return fallback_synthesis.ruling_explanation
-    architect_model = os.getenv("MAGI_ARCHITECT_MODEL", os.getenv("MAGI_MODEL_CLAUDE", "anthropic/claude-3-5-sonnet-latest"))
+    architect_model = _litellm_model_for_openrouter_key(
+        os.getenv("MAGI_ARCHITECT_MODEL", os.getenv("MAGI_MODEL_CLAUDE", "anthropic/claude-3-5-sonnet-latest")),
+        token,
+    )
     reports_blob = "\n\n".join(
         [f"[{r.node}] status={r.status.value}, opinion={r.opinion}, summary={r.summary}" for r in second_round_reports]
     )
@@ -785,9 +812,10 @@ async def preflight_models(payload: Dict[str, Any]) -> Dict[str, Any]:
         try:
             if acompletion is None:
                 raise RuntimeError("litellm is unavailable.")
+            litellm_model = _litellm_model_for_openrouter_key(model_name, token)
             await asyncio.wait_for(
                 acompletion(
-                    model=model_name,
+                    model=litellm_model,
                     api_key=token,
                     messages=[
                         {"role": "system", "content": "ping"},
@@ -1012,8 +1040,9 @@ async def _call_with_litellm(
 ) -> str:
     prompt = _build_user_prompt(draft, round_context, locale)
     system_content = f"{spec.system_prompt}\n{_lang_instruction(locale)}"
+    litellm_model = _litellm_model_for_openrouter_key(model_name, token)
     response = await acompletion(
-        model=model_name,
+        model=litellm_model,
         api_key=token,
         messages=[
             {"role": "system", "content": system_content},
