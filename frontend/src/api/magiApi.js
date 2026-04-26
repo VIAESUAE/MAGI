@@ -1,5 +1,7 @@
+import { getApiUrl } from './apiBase.js'
+
 export async function preflightMagi(tokens, models = {}, locale = 'zh') {
-  const res = await fetch('/api/magi/preflight', {
+  const res = await fetch(getApiUrl('/api/magi/preflight'), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ tokens, models, locale })
@@ -20,7 +22,7 @@ export async function preflightMagi(tokens, models = {}, locale = 'zh') {
 }
 
 export async function fetchOpenRouterModels(token) {
-  const res = await fetch('/api/magi/openrouter/models', {
+  const res = await fetch(getApiUrl('/api/magi/openrouter/models'), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ token })

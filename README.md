@@ -41,3 +41,9 @@ On macOS you can try `start-dev.command` in the project root to launch both (req
 ## UI languages
 
 The interface supports **Traditional Chinese** (`zh`), **English** (`en`), and **Japanese** (`ja`), selectable in the app. The default follows the browser language on first visit when no preference is stored.
+
+## Deploy backend on Render
+
+`requirements.txt` lives under **`backend/`**, not the repo root. In the Render dashboard: **Settings → Root Directory** = `backend`. **Build:** `pip install -r requirements.txt`. **Start:** `uvicorn app.main:app --host 0.0.0.0 --port $PORT`.
+
+Alternatively, connect a [Blueprint](https://render.com/docs/infrastructure-as-code) using [`render.yaml`](./render.yaml) at the repository root.

@@ -1,0 +1,12 @@
+# Render Blueprint: set Web Service root to backend/ so requirements.txt resolves.
+# https://render.com/docs/monorepo-support
+services:
+  - type: web
+    name: magi-backend
+    runtime: python
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.11.11"

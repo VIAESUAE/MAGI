@@ -1,6 +1,8 @@
 /**
  * POST SSE: consumes FastAPI StreamingResponse (text/event-stream) with JSON data lines.
  */
+import { getApiUrl } from './apiBase.js'
+
 export async function consumeMagiStream(body, { onEvent, signal } = {}) {
   const connectTimeoutMs = 15000
   const connectController = new AbortController()
@@ -20,7 +22,7 @@ export async function consumeMagiStream(body, { onEvent, signal } = {}) {
 
   let res
   try {
-    res = await fetch('/api/magi/resolve/stream', {
+    res = await fetch(getApiUrl('/api/magi/resolve/stream'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Accept: 'text/event-stream' },
       body: JSON.stringify(body),
