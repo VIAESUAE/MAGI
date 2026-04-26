@@ -25,6 +25,9 @@
       <button type="button" class="lang-guide-btn" @click="openUserGuide">
         {{ t('userGuideButton') }}
       </button>
+      <button type="button" class="lang-guide-btn" @click="openPrivacy">
+        {{ t('privacyButton') }}
+      </button>
     </div>
     <DocModal
       v-if="showGuideModal"
@@ -32,6 +35,13 @@
       :body="t('guideBody')"
       :close-label="t('close')"
       @close="closeUserGuide"
+    />
+    <DocModal
+      v-if="showPrivacyModal"
+      :title="t('privacyModalTitle')"
+      :body="t('privacyBody')"
+      :close-label="t('close')"
+      @close="closePrivacy"
     />
     <DocModal
       v-if="showDisclaimerModal"
@@ -337,10 +347,19 @@ const showWelcome = ref(
   typeof sessionStorage === 'undefined' ? true : !sessionStorage.getItem(WELCOME_KEY)
 )
 const showGuideModal = ref(false)
+const showPrivacyModal = ref(false)
 const showDisclaimerModal = ref(false)
 
 function openUserGuide() {
   showGuideModal.value = true
+}
+
+function openPrivacy() {
+  showPrivacyModal.value = true
+}
+
+function closePrivacy() {
+  showPrivacyModal.value = false
 }
 
 function closeUserGuide() {

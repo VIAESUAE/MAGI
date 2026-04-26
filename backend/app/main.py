@@ -1,8 +1,26 @@
+import logging
 import os
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.exception_handlers import http_exception_handler, request_validation_exception_handler
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+
 from .api_router import router
+
+# Avoid litellm printing request/response details to process logs.
+try:
+    import litellm
+
+    if hasattr(litellm, "set_verbose"):
+        litellm.set_verbose = False
+    if hasattr(litellm, "suppress_debug_info"):
+        litellm.suppress_debug_info = True
+except Exception:
+    pass
+
+_log = logging.getLogger("magi")
 
 
 def _cors_origins() -> list[str]:
@@ -41,3 +59,20 @@ app.add_middleware(
 )
 
 app.include_router(router)
+
+
+@app.exception_handler(Exception)
+async def unhandled_exception(request: Request, exc: Exception) -> JSONResponse:
+    """Do not return raw exception text (may contain upstream or redacted key material) to clients."""
+    if isinstance(exc, HTTPException):
+        return await http_exception_handler(request, exc)
+    if isinstance(exc, RequestValidationError):
+        return await request_validation_exception_handler(request, exc)
+    if (os.getenv("MAGI_DEBUG") or "").strip() in ("1", "true", "yes"):
+        _log.exception("unhandled")
+    else:
+        _log.error("unhandled: %s (set MAGI_DEBUG=1 for trace)", type(exc).__name__)
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "Service error. If this persists, try again or use a self-hosted backend."},
+    )

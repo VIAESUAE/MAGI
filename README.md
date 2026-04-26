@@ -6,6 +6,7 @@ An EVA-inspired multi-agent consensus UI: three models in parallel blind review,
 
 - **Quick start:** [QUICKSTART.md](./QUICKSTART.md)
 - **Architecture and implementation notes:** [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md)
+- **Privacy (hosted backend vs self-host):** [PRIVACY.md](./PRIVACY.md) · [SECURITY.md](./SECURITY.md)
 
 ## Install (once per machine)
 

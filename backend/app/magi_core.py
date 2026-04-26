@@ -11,6 +11,7 @@ from typing import Any, AsyncIterator, Dict, List, Optional, Tuple
 from fastapi import HTTPException
 
 from .architect import build_resolution_draft
+from .safe_errors import http_detail, public_error_message, sse_error_payload
 from .schemas import ArchitectResult, NodeReport, NodeStatus, ResolveRequest, ResolveResponse, ResolutionDraft
 from .synthesizer import synthesize_reports
 
@@ -791,7 +792,7 @@ async def preflight_models(payload: Dict[str, Any]) -> Dict[str, Any]:
             }
         )
     except Exception as exc:
-        raise HTTPException(status_code=422, detail=str(exc)) from exc
+        raise HTTPException(status_code=422, detail=http_detail(exc)) from exc
 
     checks: List[Dict[str, Any]] = []
     all_ok = True
@@ -830,7 +831,9 @@ async def preflight_models(payload: Dict[str, Any]) -> Dict[str, Any]:
             checks.append({"node": spec.node, "model": model_name, "ok": True, "detail": "reachable"})
         except Exception as exc:
             all_ok = False
-            checks.append({"node": spec.node, "model": model_name, "ok": False, "detail": str(exc)})
+            checks.append(
+                {"node": spec.node, "model": model_name, "ok": False, "detail": public_error_message(exc)}
+            )
 
     return {"ok": all_ok, "checks": checks}
 
@@ -863,7 +866,10 @@ async def list_openrouter_models(payload: Dict[str, Any]) -> Dict[str, Any]:
     try:
         return await asyncio.to_thread(_fetch_openrouter_models_sync, token)
     except Exception as exc:
-        raise HTTPException(status_code=502, detail=f"Failed to fetch OpenRouter models: {exc}") from exc
+        raise HTTPException(
+            status_code=502,
+            detail=public_error_message(exc) or "Could not reach OpenRouter to list models.",
+        ) from exc
 
 
 async def iter_magi_resolve_sse(payload: Dict) -> AsyncIterator[str]:
@@ -871,7 +877,7 @@ async def iter_magi_resolve_sse(payload: Dict) -> AsyncIterator[str]:
     try:
         request = ResolveRequest.model_validate(payload)
     except Exception as exc:
-        yield _sse_data({"event": "error", "detail": str(exc)})
+        yield _sse_data(sse_error_payload(exc))
         return
 
     yield _sse_data(
@@ -954,7 +960,7 @@ async def process_magi(payload: Dict) -> Dict:
     try:
         request = ResolveRequest.model_validate(payload)
     except Exception as exc:
-        raise HTTPException(status_code=422, detail=str(exc)) from exc
+        raise HTTPException(status_code=422, detail=http_detail(exc)) from exc
 
     architect = await _build_architect_result(request)
     if architect.requires_clarification:
@@ -1012,7 +1018,7 @@ async def _call_node(
             node=spec.node,
             provider=spec.provider,
             status=NodeStatus.ERROR,
-            summary=f"{_tx(locale, 'node_error_prefix')}: {exc}",
+            summary=f"{_tx(locale, 'node_error_prefix')}: {public_error_message(exc)}",
         )
 
 
