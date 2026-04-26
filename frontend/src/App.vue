@@ -1,5 +1,13 @@
 <template>
   <div class="app-container">
+    <div
+      v-if="apiConfigWarning && !dismissApiConfigBanner"
+      class="api-config-banner"
+      role="alert"
+    >
+      <span class="api-config-text">{{ apiConfigWarning }}</span>
+      <button type="button" class="api-config-dismiss" @click="dismissApiConfigBanner = true" aria-label="關閉">×</button>
+    </div>
     <WelcomeView
       v-if="showWelcome"
       :title="t('welcomeTitle')"
@@ -55,6 +63,7 @@ import StandbyView from './views/StandbyView.vue'
 import ArchitectAnalysisView from './views/ArchitectAnalysisView.vue'
 import TriCoreProcessingView from './views/TriCoreProcessingView.vue'
 import ResolutionView from './views/ResolutionView.vue'
+import { getProdApiConfigWarning } from './api/apiBase.js'
 import { consumeMagiStream } from './api/magiStream.js'
 import { preflightMagi } from './api/magiApi.js'
 
@@ -318,6 +327,9 @@ const I18N = {
     ...magiDocs.ja
   }
 }
+
+const apiConfigWarning = getProdApiConfigWarning()
+const dismissApiConfigBanner = ref(false)
 
 const WELCOME_KEY = 'magi_welcome_seen'
 const GUIDE_DISMISSED_KEY = 'magi_user_guide_dismissed'
@@ -881,6 +893,46 @@ function handleTransition(payload) {
 </script>
 
 <style scoped>
+.api-config-banner {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 500;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 12px 10px;
+  background: #3d0a0a;
+  color: #ffb3b3;
+  border-bottom: 1px solid #ff5c5c;
+  font-size: 12px;
+  line-height: 1.5;
+  box-sizing: border-box;
+}
+.api-config-text {
+  flex: 1;
+  min-width: 0;
+  word-break: break-word;
+}
+.api-config-dismiss {
+  flex: 0 0 auto;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  color: #fff;
+  width: 28px;
+  height: 28px;
+  line-height: 1;
+  cursor: pointer;
+  font-size: 18px;
+  padding: 0;
+  border-radius: 2px;
+}
+.api-config-dismiss:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
 .app-container {
   width: 100%;
   height: 100%;
