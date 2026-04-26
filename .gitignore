@@ -1,0 +1,26 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+.python-version
+
+# Node
+node_modules/
+frontend/dist/
+
+# Secrets & local env (never commit real keys)
+.env
+.env.*
+!.env.example
+
+# OS & editor
+.DS_Store
+.idea/
+.vscode/
+
+# Keys / certs (accidental paste)
+*.pem
+id_rsa
+id_rsa.pub
+*.p12
