@@ -10,3 +10,6 @@ services:
     envVars:
       - key: PYTHON_VERSION
         value: "3.11.11"
+      # OpenRouter free tier can exceed 20s per node; align with frontend SSE idle default.
+      - key: MAGI_NODE_TIMEOUT
+        value: "120"

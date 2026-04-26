@@ -21,8 +21,9 @@ except Exception:  # pragma: no cover - optional dependency for local setup
     completion = None
 
 
-NODE_TIMEOUT_SECONDS = float(os.getenv("MAGI_NODE_TIMEOUT", "20"))
-PREFLIGHT_TIMEOUT_SECONDS = float(os.getenv("MAGI_PREFLIGHT_TIMEOUT", "12"))
+# OpenRouter free models often need 30–120s+; default 20s caused all three nodes to TIMEOUT.
+NODE_TIMEOUT_SECONDS = float(os.getenv("MAGI_NODE_TIMEOUT", "120"))
+PREFLIGHT_TIMEOUT_SECONDS = float(os.getenv("MAGI_PREFLIGHT_TIMEOUT", "30"))
 ARCHITECT_TIMEOUT_SECONDS = float(os.getenv("MAGI_ARCHITECT_TIMEOUT", "8"))
 MAX_CLARIFICATION_TURNS = int(os.getenv("MAGI_MAX_CLARIFICATION_TURNS", "3"))
 

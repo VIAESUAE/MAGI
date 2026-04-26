@@ -3,11 +3,27 @@
  */
 import { getApiUrl } from './apiBase.js'
 
+/** Render cold start / TLS can exceed 15s; tunable via VITE_SSE_CONNECT_MS in build. */
+const connectTimeoutMs =
+  Number(import.meta.env.VITE_SSE_CONNECT_MS) > 0
+    ? Number(import.meta.env.VITE_SSE_CONNECT_MS)
+    : 60000
+
+/**
+ * No SSE chunks are sent while the server runs tri-core LLM calls; gaps of minutes are possible
+ * on free models. Default 45s was far too short. Override with VITE_SSE_IDLE_MS (build-time).
+ */
+const streamIdleTimeoutMs =
+  Number(import.meta.env.VITE_SSE_IDLE_MS) > 0
+    ? Number(import.meta.env.VITE_SSE_IDLE_MS)
+    : 600000
+
 export async function consumeMagiStream(body, { onEvent, signal } = {}) {
-  const connectTimeoutMs = 15000
   const connectController = new AbortController()
   const connectTimeoutId = setTimeout(() => {
-    connectController.abort(new Error(`SSE connection timeout after ${connectTimeoutMs / 1000}s.`))
+    connectController.abort(
+      new Error(`SSE connection timeout after ${connectTimeoutMs / 1000}s (try VITE_SSE_CONNECT_MS / check Render sleep).`)
+    )
   }, connectTimeoutMs)
 
   if (signal) {
@@ -31,7 +47,9 @@ export async function consumeMagiStream(body, { onEvent, signal } = {}) {
   } catch (err) {
     clearTimeout(connectTimeoutId)
     if (connectController.signal.aborted && !(signal && signal.aborted)) {
-      throw new Error(`Unable to connect to stream endpoint within ${connectTimeoutMs / 1000}s.`)
+      throw new Error(
+        `Unable to connect to stream endpoint within ${connectTimeoutMs / 1000}s (Render may be waking from sleep).`
+      )
     }
     throw err
   } finally {
@@ -54,7 +72,7 @@ export async function consumeMagiStream(body, { onEvent, signal } = {}) {
   const decoder = new TextDecoder()
   let buffer = ''
   let streamEnded = false
-  const timeoutMs = 45000
+  const timeoutMs = streamIdleTimeoutMs
   let timeoutId = null
   let timedOut = false
 
@@ -133,7 +151,9 @@ export async function consumeMagiStream(body, { onEvent, signal } = {}) {
       clearWatchdog()
       if (!streamEnded) {
         if (timedOut) {
-          throw new Error(`SSE stream timed out after ${timeoutMs / 1000}s without completion.`)
+          throw new Error(
+            `SSE stream idle timeout after ${timeoutMs / 1000}s (raise VITE_SSE_IDLE_MS on build, or reduce model latency).`
+          )
         }
         throw new Error('SSE stream ended unexpectedly before done signal.')
       }
