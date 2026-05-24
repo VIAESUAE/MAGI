@@ -1,6 +1,6 @@
 # MAGI (Multi-Agent Consensus System)
 
-An EVA-inspired multi-agent consensus UI: three models in parallel blind review, SSE streaming, two review rounds, and synthesis.
+An EVA-inspired multi-agent consensus UI: three models in parallel blind review, SSE streaming, two review rounds, and synthes1s.
 
 ## Start here
 
